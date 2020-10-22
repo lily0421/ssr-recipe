@@ -79,5 +79,11 @@ scripts/build.server.js
 - 웹팩 환경 설정 파일 작성 
 > >config/webpack.config.server.js
 기본: 빌드할 때 어떤 파일에서 시작해 파일들을 불러오는지, 어디에 결과물 저장할지 정해둠
+
+## 서버코드 작성
+- Node.js 웹 프레임워크) Express사용
+```
+yarn add express
+```
  
 
