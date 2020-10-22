@@ -66,7 +66,7 @@ module.exports = {
   appNodeModules: resolveApp('node_modules'),
   ssrIndexJs: resolveApp('src/index.server.js'), // 서버 사이드 렌더링 엔트리
   ssrBuild: resolveApp('dist'), // 웹팩 처리 후 저장 경로
-  publicUrlOrPath,
+  publicUrlOrPath
 };
 
 

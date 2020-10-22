@@ -3,7 +3,6 @@ const getCSSModuleLocalIdent = require('react-dev-utils/getCSSModuleLocalIdent')
 const webpack = require('webpack');
 const getClientEnvironment = require('./env');//환경변수 주입
 
-
 const cssRegex = /\.css$/;
 const cssModuleRegex = /\.module\.css$/;
 const sassRegex = /\.(scss|sass)$/;
@@ -14,35 +13,35 @@ const env = getClientEnvironment(paths.publicUrlOrPath.slice(0, -1));
 
 module.exports = {
   mode: 'production', //프로덕션 모드로 설정하여 최적화 옵션들을 활성화
-  entry: paths.ssrIndexJsJs, //엔트리 경로
-  target: 'node',//node환경에서 실행될 것이라는 점 명시
+  entry: paths.ssrIndexJs, //엔트리 경로
+  target: 'node', //node 환경에서 실행 될 것이라는 것을 명시
   output: {
-    path: paths.ssrBuild,//빌드경로
+    path: paths.ssrBuild,//빌드 경로
     filename: 'server.js',//파일이름
-    chunkFilenmae: 'js/[name].chunk.js',//청크파일 이름
-    publicPath: paths.publicUrlOrPath,//정적파일이 제공될 경로
+    chunkFilename: 'js/[name].chunk.js',//청크파일 이름
+    publicPath: paths.publicUrlOrPath //정적파일이 제공될 경로
   },
-  module:{
+  module: {
     rules: [
       {
         oneOf: [
-          //js를 위한 처리
-          //기존 webpack.config.js를 참고해 작성
+          // 자바스크립트를 위한 처리
+          // 기존 webpack.config.js 를 참고하여 작성
           {
-            text: /\.(js|mjs|jsx|ts|tsx)$/,
-            onclude: paths.appSrc,
+            test: /\.(js|mjs|jsx|ts|tsx)$/,
+            include: paths.appSrc,
             loader: require.resolve('babel-loader'),
             options: {
-              cutomize: require.resolve(
+              customize: require.resolve(
                 'babel-preset-react-app/webpack-overrides'
               ),
               plugins: [
                 [
                   require.resolve('babel-plugin-named-asset-import'),
                   {
-                    loaderMap:{
+                    loaderMap: {
                       svg: {
-                        ReactComponet: '@svgr/sebpack?-svgo![path]'
+                        ReactComponent: '@svgr/webpack?-svgo![path]'
                       }
                     }
                   }
@@ -50,30 +49,31 @@ module.exports = {
               ],
               cacheDirectory: true,
               cacheCompression: false,
-              compat: false
+              compact: false
             }
           },
-          //css를 위한 처리
+
+          // CSS 를 위한 처리
           {
             test: cssRegex,
             exclude: cssModuleRegex,
-            //exportOnlyLocals: true옵션을 설정해야 실제css파일을 생성하지 않음
+            //  exportOnlyLocals: true 옵션을 설정해야 실제 css 파일을 생성하지 않습니다.
             loader: require.resolve('css-loader'),
             options: {
-              onlyLocals: true
+              exportOnlyLocals: true
             }
           },
-          //css module을 위한 처리
+          // CSS Module 을 위한 처리
           {
             test: cssModuleRegex,
             loader: require.resolve('css-loader'),
             options: {
-              modules:true,
-              onlyLocals: true,
+              modules: true,
+              exportOnlyLocals: true,
               getLocalIdent: getCSSModuleLocalIdent
             }
           },
-          //sass를 위한 처리
+          // Sass 를 위한 처리
           {
             test: sassRegex,
             exclude: sassModuleRegex,
@@ -81,13 +81,13 @@ module.exports = {
               {
                 loader: require.resolve('css-loader'),
                 options: {
-                  onlyLocals: true
+                  exportOnlyLocals: true
                 }
               },
               require.resolve('sass-loader')
             ]
           },
-          //sass+ css 모듈 위한 처리
+          // Sass + CSS Module 을 위한 처리
           {
             test: sassRegex,
             exclude: sassModuleRegex,
@@ -96,30 +96,32 @@ module.exports = {
                 loader: require.resolve('css-loader'),
                 options: {
                   modules: true,
-                  onlyLocals: true,
+                  exportOnlyLocals: true,
                   getLocalIdent: getCSSModuleLocalIdent
                 }
               },
               require.resolve('sass-loader')
             ]
           },
-          //url-loader위한 설정
+          // url-loader 를 위한 설정
           {
-            test: [/\.bmp$/, /\.gif$/,/\.jpe?g$/,/\.png$/],
+            test: [/\.bmp$/, /\.gif$/, /\.jpe?g$/, /\.png$/],
             loader: require.resolve('url-loader'),
             options: {
-              emitFile: false, //파일을 따로 저장히자 않는 옵션
-              limit: 1000, //원래는 9.76kb가 넘어가면 파일로 저장하는데 emitFile값이 f일때는 경로만 준비하고 파일은 저장하지 않음
+              emitFile: false, // 파일을 따로 저장하지 않는 옵션
+              limit: 10000, // 원래는 9.76KB가 넘어가면 파일로 저장하는데
+              // emitFile 값이 false 일땐 경로만 준비하고 파일은 저장하지 않습니다.
               name: 'static/media/[name].[hash:8].[ext]'
             }
           },
-          //위에서 설정된 확장자를 제외한 파일들 => file.loader사용함
+          // 위에서 설정된 확장자를 제외한 파일들은
+          // file-loader 를 사용합니다.
           {
             loader: require.resolve('file-loader'),
             exclude: [/\.(js|mjs|jsx|ts|tsx)$/, /\.html$/, /\.json$/],
             options: {
-              emitFile: false,
-              name: 'statc/medai/[name].[hash:8].[ext]'
+              emitFile: false, // 파일을 따로 저장하지 않는 옵션
+              name: 'static/media/[name].[hash:8].[ext]'
             }
           }
         ]
@@ -131,6 +133,6 @@ module.exports = {
   },
   externals: [nodeExternals()],
   plugins: [
-    new webpack.DefinePlugin(env.stringified) //환경변수 주입
+    new webpack.DefinePlugin(env.stringified) // 환경변수를 주입해줍니다.
   ]
-}
+};
