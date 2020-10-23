@@ -1,8 +1,17 @@
-## 프로젝트 작업 순서
+# 프로젝트 작업 순서
 - 서버사이드 렌더링 구현
 - 데이터 로딩
 - 코드스플리팅
 
+## 설명
+- page 폴더
+각 라우트를 위한 페이지 컴포넌트들
+ 
+- 웹팩 환경 설정 파일 작성 
+> >config/webpack.config.server.js
+기본: 빌드할 때 어떤 파일에서 시작해 파일들을 불러오는지, 어디에 결과물 저장할지 정해둠
+
+## 서버 사이드 렌더링 구현
 - 설치 react-router-dom
 ```
 yarn add react-router-dom
@@ -72,18 +81,27 @@ scripts/build.server.js
 "build:server": "node scripts/build.server.js"
 ```
 
-## 설명
-- page 폴더
-각 라우트를 위한 페이지 컴포넌트들
- 
-- 웹팩 환경 설정 파일 작성 
-> >config/webpack.config.server.js
-기본: 빌드할 때 어떤 파일에서 시작해 파일들을 불러오는지, 어디에 결과물 저장할지 정해둠
-
-## 서버코드 작성
+### 서버코드 작성
 - Node.js 웹 프레임워크) Express사용
 ```
 yarn add express
 ```
  
+### 정적 파일 제공
+- yarn build
+js와 css파일을 불러오도록 html애 코드를 삽입해주어야 함.
+불러와야하는 파일 이름은 매번 다름 => 빌드 후 build/asset-manifest.json파일 참고해 불러옴
 
+- index.server.js
+build/asset-manifest.json
+=> main.css , main.js, runtime~main.js, static/js/2.2530d60c.chunk.js 
+=> 불러와야 함
+
+
+## 데이터 로딩
+- redux-thunk 
+```
+yarn add redux react-redux redux-thunk axios
+```
+- Ducks 패턴 사용
+액션타입, 액션생성함수, 리듀서 코드 => 한 파일에 넣어 관리
