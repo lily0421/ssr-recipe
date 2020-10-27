@@ -1,5 +1,5 @@
 import React from 'react'
-import ReactDomServer from 'react-dom/server'
+import ReactDOMServer from 'react-dom/server'
 import express from 'express'
 import { StaticRouter } from 'react-router-dom'
 import App from './App'
@@ -7,12 +7,14 @@ import path from 'path'
 import { createStore, applyMiddleware } from 'redux'
 import { Provider } from 'react-redux'
 import thunk from 'redux-thunk'
-import rootReducer from './modules'
-import PreloadContext from './lib/PreloadContext'
+import rootReducer, {rootSaga} from './modules'
+import preloadContext from './lib/PreloadContext'
+import createSagaMiddleware from 'react-redux'
+import {END} from 'redux-saga'
 
 //asset-manifest.json파일 경로들 조회.
 const statsFile = path.resolve('./build/loadable-stats.json')
-function createPage(root, tags) {
+function createPage(root, stateScript) {
   return `<!DOCTYPE html>
   <html lang="en">
   <head>
@@ -24,15 +26,13 @@ function createPage(root, tags) {
     />
     <meta name="theme-color" content="#000000" />
     <title>React App</title>
-    ${tags.styles}
-    ${tags.links}
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root">
       ${root}
     </div>
-    ${tags.scripts}
+    ${stateScript}
   </body>
   </html>
  `
@@ -40,17 +40,23 @@ function createPage(root, tags) {
 
 const app = express()
 
-const serverRender = (req, res, next) => {
+const serverRender = async (req, res, next) => {
   //404가 떠야하는 상황에 서버사이드 렌더링 해줌
   const context = {}
-  const store = createStore(rootReducer, applyMiddleware(thunk))
+  const sagaMiddleware = createSagaMiddleware();
+  const store = createStore(
+    rootReducer, 
+    applyMiddleware(thunk, sagaMiddleware)
+  )
 
-  const preloadContext = {
+  const sagaPromise = sagaMiddleware.run(rootSaga)
+  const PreloadContext = {
     done: false,
     promises: [],
   }
+
   const jsx = (
-    <PreloadContext.Provider value={preloadContext}>
+    <PreloadContext.Provider value={PreloadContext}>
       <Provider store={store}>
         <StaticRouter location={req.url} context={context}>
           <App />
@@ -58,17 +64,20 @@ const serverRender = (req, res, next) => {
       </Provider>
     </PreloadContext.Provider>
   )
-
-  ReactDomServer.renderToStaticMarkup(jsx)
-  try {
-    await Promise.all(preloadContext.promises); 
-  }catch(e){
-    return res.status(500)
+  ReactDOMServer.renderToString(jsx);
+  store.dispatch(END)
+  try{
+    await sagaPromise
+    await Promise.all(preloadContext.promises); //모든 프로미스 기다림
+  } catch(e){
+    return res.status(500);
   }
-  preloadContext.done=true;
-  const root = ReactDomServer.renderToString(jsx) //렌더링 하고
-  // res.send(root);//클라이언트에게 결과물 응답
-  res.send(createPage(root))
+  preloadContext.done = true;
+  const root = ReactDOMServer.renderToString(jsx) //렌더링 하고
+  //JSON을 문자열로 변환하고 악성 스크립트가 실행되는 것을 방지하기 위해 <를 치환처리
+  const stateString = JSON.stringify(store.getState()).replace(/</g, '\\u003c')
+  const stateScript = `<script>__PRELOADED_STATE__=${stateString}</script>` //리덕스 초기상태를 스크립트로 주입
+  res.send(createPage(root, stateScript)) //클라이언트에게 결과물 응답
 }
 
 const server = express.static(path.resolve('./build'), {
